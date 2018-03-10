@@ -4,6 +4,7 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -17,6 +18,14 @@ public class Bot extends TelegramLongPollingBot {
     private List<Module> modules;
     private List<Module> modulesToAdd;
     private List<Module> modulesToRemove;
+
+    /**
+     * For testing, run a bot with a predefined set of modules
+     */
+    public Bot(String username, String apiKey, List<Module> modules) {
+        this(new BotInfo(username, apiKey, new HashMap<>()));
+        this.modules.addAll(modules);
+    }
 
     Bot(BotInfo botInfo) {
         this.botInfo = botInfo;
