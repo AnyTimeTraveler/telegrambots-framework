@@ -13,11 +13,13 @@ import java.util.List;
 public class Bot extends TelegramLongPollingBot {
     private final BotInfo botInfo;
     private final Object MODULES_LOCK;
+    private final Object MODULE_INFO_LOCK;
     private final Object MODULES_ADD_LOCK;
     private final Object MODULES_REMOVE_LOCK;
     private List<Module> modules;
     private List<Module> modulesToAdd;
     private List<Module> modulesToRemove;
+    private List<ModuleInfo> moduleInfos;
 
     /**
      * For testing, run a bot with a predefined set of modules
@@ -30,9 +32,11 @@ public class Bot extends TelegramLongPollingBot {
     Bot(BotInfo botInfo) {
         this.botInfo = botInfo;
         modules = new ArrayList<>();
+        moduleInfos = new ArrayList<>();
         modulesToAdd = new ArrayList<>();
         modulesToRemove = new ArrayList<>();
         MODULES_LOCK = new Object();
+        MODULE_INFO_LOCK = new Object();
         MODULES_ADD_LOCK = new Object();
         MODULES_REMOVE_LOCK = new Object();
         System.out.println("Starting Bot: " + botInfo.getName() + "...");
@@ -40,7 +44,6 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        Utils.logUpdate(update);
         synchronized (MODULES_LOCK) {
             modules.parallelStream().forEach(module -> {
                 try {
@@ -55,13 +58,21 @@ public class Bot extends TelegramLongPollingBot {
 
     void updateModules() {
         synchronized (MODULES_LOCK) {
-            synchronized (MODULES_REMOVE_LOCK) {
-                modules.removeAll(modulesToRemove);
-                modulesToRemove.clear();
-            }
-            synchronized (MODULES_ADD_LOCK) {
-                modules.addAll(modulesToAdd);
-                modulesToAdd.clear();
+            synchronized (MODULE_INFO_LOCK) {
+                synchronized (MODULES_REMOVE_LOCK) {
+                    modulesToRemove.forEach(it -> it.preUnload(this));
+                    modules.removeAll(modulesToRemove);
+                    modulesToRemove.stream().map(Module::getModuleInfo).forEach(moduleInfos::remove);
+                    modulesToRemove.forEach(m -> m.postUnload(this));
+                    modulesToRemove.clear();
+                }
+                synchronized (MODULES_ADD_LOCK) {
+                    modulesToAdd.removeAll(modules); // remove all modules already loaded
+                    modules.addAll(modulesToAdd);
+                    modulesToAdd.stream().map(Module::getModuleInfo).forEach(moduleInfos::add); // add the newly loaded modules to the new list
+                    modulesToAdd.forEach(m -> m.postLoad(this));
+                    modulesToAdd.clear();
+                }
             }
         }
     }
@@ -80,31 +91,29 @@ public class Bot extends TelegramLongPollingBot {
     public void onClosing() {
         synchronized (MODULES_LOCK) {
             for (Module module : modules) {
-                botInfo.setModuleState(module.getName(), module.saveState(this));
+                botInfo.setModuleState(module.getModuleInfo().getModuleId(), module.saveState(this));
             }
             Config.getInstance().save();
         }
     }
 
-    public boolean enableModule(Module module) {
-        synchronized (MODULES_LOCK) {
-            if (modules.contains(module))
-                return false;
-            synchronized (MODULES_ADD_LOCK) {
-                modulesToAdd.add(module);
-            }
-            return true;
+    public void enableModule(Module module) {
+        synchronized (MODULES_ADD_LOCK) {
+            modulesToAdd.add(module);
         }
     }
 
-    public boolean disableModule(Module module) {
-        synchronized (MODULES_LOCK) {
-            if (!modules.contains(module))
-                return false;
-            synchronized (MODULES_REMOVE_LOCK) {
+    public void disableModule(Module module) {
+        synchronized (MODULES_REMOVE_LOCK) {
+            if (!modulesToRemove.contains(module)) { // only schedule a module once for unloading
                 modulesToRemove.add(module);
             }
-            return true;
+        }
+    }
+
+    public List<ModuleInfo> getModules() {
+        synchronized (MODULE_INFO_LOCK) {
+            return moduleInfos;
         }
     }
 
@@ -113,13 +122,13 @@ public class Bot extends TelegramLongPollingBot {
             for (Module module : modules) {
                 try {
                     State state = module.saveState(this);
-                    if (state == null) continue;
+                    if (state == null) {
+                        continue;
+                    }
 
-                    ModuleInfo info = botInfo.getModuleData().getOrDefault(module.getName(), new ModuleInfo(module.getName(), module.getVersion()));
-                    info.setState(state);
-                    botInfo.getModuleData().put(module.getName(), info);
+                    botInfo.getModuleData().put(module.getModuleInfo().getModuleId(), state);
                 } catch (Throwable t) {
-                    System.err.printf("Module %s threw an error while saving:\n", module.getName());
+                    System.err.printf("Module %s threw an error while saving:\n", module.getModuleInfo().getModuleId());
                     t.printStackTrace();
                 }
             }

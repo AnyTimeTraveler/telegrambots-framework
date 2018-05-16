@@ -8,9 +8,9 @@ import java.util.HashMap;
 public class BotInfo {
     private String name;
     private String apiKey;
-    private HashMap<String, ModuleInfo> moduleData;
+    private HashMap<String, State> moduleData;
 
-    BotInfo(String name, String apiKey, HashMap<String, ModuleInfo> moduleData) {
+    BotInfo(String name, String apiKey, HashMap<String, State> moduleData) {
         this.name = name;
         this.apiKey = apiKey;
         this.moduleData = moduleData;
@@ -25,12 +25,10 @@ public class BotInfo {
     }
 
     public void setModuleState(String module, State state) {
-        ModuleInfo moduleInfo = moduleData.get(module);
-        if (moduleInfo != null)
-            moduleInfo.setState(state);
+        moduleData.put(module, state);
     }
 
-    public HashMap<String, ModuleInfo> getModuleData() {
+    public HashMap<String, State> getModuleData() {
         return moduleData;
     }
 }

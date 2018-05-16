@@ -5,24 +5,15 @@ import org.telegram.telegrambots.api.objects.Update;
 public interface Module {
 
     /**
-     * @return name of module
+     *
+     * @return
      */
-    String getName();
-
-    /**
-     * @return version of module
-     */
-    String getVersion();
-
-    /**
-     * @return name of module author
-     */
-    String getAuthor();
+    ModuleInfo getModuleInfo();
 
     /**
      * This function is called when you module is first loaded by the framework
      *
-     * @param state the state last returned by the save function
+     * @param state the state last returned by the save function or null, if no previous state has been found
      */
     void initialize(State state);
 

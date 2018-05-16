@@ -36,10 +36,24 @@ public class Utils {
         return checkForCommand(update, command, false);
     }
 
+    public static Message checkForCommand(Update update, String command, boolean evaluateEdited, boolean transformToLowercase) {
+        if (!transformToLowercase) {
+            return checkForCommand(update, command, evaluateEdited);
+        } else {
+            Message message = getMessageFromUpdate(update, evaluateEdited);
+            if (message != null) {
+                if (message.hasText() && (message.getText().startsWith(command + " ") || message.getText().startsWith(command + "@") || message.getText().trim().equals(command))) {
+                    return message;
+                }
+            }
+            return null;
+        }
+    }
+
     public static Message checkForCommand(Update update, String command, boolean evaluateEdited) {
         Message message = getMessageFromUpdate(update, evaluateEdited);
         if (message != null) {
-            if (message.hasText() && message.getText().toLowerCase().startsWith(command + " ")) {
+            if (message.hasText() && (message.getText().startsWith(command + " ") || message.getText().startsWith(command + "@") || message.getText().trim().equals(command))) {
                 return message;
             }
         }
@@ -47,6 +61,9 @@ public class Utils {
     }
 
     public static String parseUserName(User user) {
+        if (user == null) {
+            return "NULL";
+        }
         if (user.getFirstName() != null && !user.getFirstName().isEmpty() && user.getLastName() != null && !user.getLastName().isEmpty())
             return user.getFirstName() + " " + user.getLastName();
         else if (user.getUserName() != null && !user.getUserName().isEmpty())
@@ -183,7 +200,9 @@ public class Utils {
     public static File getFile(Bot bot, String fileId, String fileName) throws IOException, TelegramApiException {
         File localFile = new File("/tmp/" + fileName + ".png");
         URL url = new URL(bot.execute(new GetFile().setFileId(fileId)).getFileUrl(bot.getBotToken()));
-        if (localFile.exists()) localFile.delete();
+        if (localFile.exists()) {
+            localFile.delete();
+        }
         FileUtils.copyURLToFile(url, localFile);
         return localFile;
     }

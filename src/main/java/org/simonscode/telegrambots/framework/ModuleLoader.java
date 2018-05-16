@@ -11,9 +11,17 @@ import java.util.*;
  * Created by simon on 29.04.17.
  */
 public class ModuleLoader {
+
+    void loadModules(Bot bot) {
+        for (Module module : scanModules()) {
+            module.preLoad(bot);
+            bot.enableModule(module);
+        }
+    }
+
     private static List<Module> scanModules() {
         List<Module> modules = new ArrayList<>();
-        System.out.println("Loading modules...");
+        System.out.println("Scanning for modules...");
         File moduleDir = new File("modules");
         if (moduleDir.exists()) {
             File[] moduleList = moduleDir.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
@@ -23,18 +31,22 @@ public class ModuleLoader {
                 System.exit(0);
                 return modules;
             }
-            URL[] urls = Arrays.stream(moduleList).map(e -> {
-                try {
-                    return e.toURI().toURL();
-                } catch (MalformedURLException e1) {
-                    e1.printStackTrace();
-                }
-                return null;
-            }).filter(Objects::nonNull).toArray(URL[]::new);
+            URL[] urls = Arrays.stream(moduleList)
+                               .map(file -> {
+                                   try {
+                                       return file.toURI().toURL();
+                                   } catch (MalformedURLException e) {
+                                       e.printStackTrace();
+                                   }
+                                   return null;
+                               })
+                               .filter(Objects::nonNull)
+                               .toArray(URL[]::new);
+            System.out.printf("Found %d files.\nLoading file%s...\n", urls.length, urls.length == 1 ? "" : "s");
             URLClassLoader ucl = new URLClassLoader(urls);
             ServiceLoader<Module> loader = ServiceLoader.load(Module.class, ucl);
             for (Module module : loader) {
-                System.out.println("Loaded: " + module.getName());
+                System.out.println("Loaded: " + module.getModuleInfo().getName());
                 modules.add(module);
             }
         } else {
@@ -47,20 +59,12 @@ public class ModuleLoader {
         return modules;
     }
 
-    void loadModules(Bot bot) {
-        for (Module module : scanModules()) {
-            bot.enableModule(module);
-        }
-    }
-
-    void loadModules(Bot bot, HashMap<String, ModuleInfo> modules) {
+    void loadModules(Bot bot, HashMap<String, State> modules) {
         for (Module module : scanModules()) {
             if (modules != null) {
-                ModuleInfo moduleInfo = modules.get(module.getName());
-                if (moduleInfo != null) {
-                    module.initialize(moduleInfo.getState());
-                }
+                module.initialize(modules.get(module.getModuleInfo().getModuleId()));
             }
+            module.preLoad(bot);
             bot.enableModule(module);
         }
     }

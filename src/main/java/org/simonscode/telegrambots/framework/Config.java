@@ -16,12 +16,9 @@ public class Config {
     private static Config instance;
     public ArrayList<BotInfo> bots;
 
-    private Config() {
+    public Config() {
         bots = new ArrayList<>();
-        HashMap<String, ModuleInfo> moduleData = new HashMap<>();
-        moduleData.put("exampleModule0", new ModuleInfo("Example Module 0", "1.0.0"));
-        moduleData.put("exampleModule1", new ModuleInfo("Example Module 1", "1.0.0"));
-        bots.add(new BotInfo("BOT0", "APIKEY HERE", moduleData));
+        bots.add(new BotInfo("BOT0", "APIKEY HERE", new HashMap<>()));
     }
 
     static Config getInstance() {

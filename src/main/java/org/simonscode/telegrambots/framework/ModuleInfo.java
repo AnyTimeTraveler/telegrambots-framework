@@ -1,16 +1,17 @@
 package org.simonscode.telegrambots.framework;
 
-/**
- * Created by simon on 17.07.17.
- */
 public class ModuleInfo {
+
     private String name;
     private String version;
-    private State state;
+    private String author;
+    private InstanciationPereference instanciationPereference;
 
-    public ModuleInfo(String name, String version) {
+    public ModuleInfo(String name, String version, String author, InstanciationPereference instanciationPereference) {
         this.name = name;
         this.version = version;
+        this.author = author;
+        this.instanciationPereference = instanciationPereference;
     }
 
     public String getName() {
@@ -21,11 +22,21 @@ public class ModuleInfo {
         return version;
     }
 
-    public State getState() {
-        return state;
+    public String getAuthor() {
+        return author;
     }
 
-    public void setState(State state) {
-        this.state = state;
+    public String getModuleId() {
+        return author + ':' + name + ':' + version;
+    }
+
+    public InstanciationPereference getInstanciationPereference() {
+        return instanciationPereference;
+    }
+
+    public enum InstanciationPereference {
+        SINGLE_INSTANCE_ACROSS_ALL_BOTS,
+        SINGLE_INSTANCE_PER_BOT,
+        MULTIPLE_INSTANCES_PER_BOT
     }
 }

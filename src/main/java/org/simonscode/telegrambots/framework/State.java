@@ -1,4 +1,6 @@
 package org.simonscode.telegrambots.framework;
 
-public abstract class State {
+public class State {
+    public State() {
+    }
 }

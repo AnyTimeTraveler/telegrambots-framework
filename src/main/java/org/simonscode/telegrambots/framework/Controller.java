@@ -5,13 +5,22 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.generics.BotSession;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Controller {
     private static final List<BotSession> sessions = new ArrayList<>();
     private static List<Bot> bots = new ArrayList<>();
+
+    private static Map<String, String> availableCommands = new HashMap<>();
+
+    static {
+        availableCommands.put("exit / quit", "Stops the framework");
+        availableCommands.put("help / ?", "Prints this info message");
+        availableCommands.put("join <channel id>", "Join a chat");
+        availableCommands.put("leave <channel id>", "Leave a chat");
+        availableCommands.put("say <message>", "Sends message to currently joined channel");
+        availableCommands.put("toggle chat", "Toggle messages appearing from the chat");
+    }
 
     public static void main(String[] args) {
         ApiContextInitializer.init();
@@ -41,22 +50,38 @@ public class Controller {
             line = sc.nextLine();
             if (line.isEmpty())
                 continue;
-            String[] command = line.split(" ");
-            switch (command[0]) {
+            String[] command = line.trim().split(" ");
+            switch (command[0].toLowerCase()) {
                 case "exit":
                 case "quit":
                 case "q":
                     break input;
                 case "join":
+                case "j":
                     //TODO: Implement joining a chat
+                    System.err.println("Leaving not yet implemented!");
+                    break;
+                case "leave":
+                case "l":
+                    //TODO: Implement leaving a chat
+                    System.err.println("Leaving not yet implemented!");
                     break;
                 case "toogle":
                     if (command.length == 2) {
                         switch (command[1]) {
                             case "chat":
                                 //TODO: Implement tollgle chat log
+                                break;
+                            default:
+                                break;
                         }
                     }
+                    break;
+                case "help":
+                case "?":
+                    System.out.println("Available commands:");
+                    availableCommands.forEach((key, value) -> System.out.printf("\t\t$-20%s ==> %s\n", key, value));
+                    System.out.println();
                     break;
                 default:
                     System.out.println("Unknown command: " + line);
@@ -66,7 +91,7 @@ public class Controller {
         stop();
     }
 
-    static void stop() {
+    public static void stop() {
         System.out.print("Stopping running bots...");
         for (BotSession session : sessions) {
             session.stop();
